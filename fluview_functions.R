@@ -23,6 +23,7 @@ fluview.scrape <- function(loc, start, stop) {
     read_html %>%
     html_table() %>%
     .[[1]] -> out
+  out$Week <- factor(out$Week)
   return(out)
 }
 
@@ -72,10 +73,18 @@ fluview.stack <- function(clin.data = df.clin, ph.data = df.ph){
     summarise(
       n.fluA = sum(n.fluA),
       n.fluB = sum(n.fluB),
+      n.flu = sum(n.fluA, n.fluB),
       total.tested = sum(total.tested)
     ) %>%
+  mutate(
+    percent.fluA = round(n.fluA/n.flu*100,1),
+    percent.fluB = round(n.fluB/n.flu*100,1),
+    percent.positive = round(n.flu/total.tested *100,1) 
+    ) %>%
+    rename(
+      week = "as.factor(Week)"
+    ) %>%
     ungroup() -> df
-  df$Week <- factor(df$Week)
   return(df)
 }
 

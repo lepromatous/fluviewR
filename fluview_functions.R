@@ -46,7 +46,7 @@ df.ph <-
     fluview.scrape(loc ="public health", start=2017),
     fluview.scrape(loc ="public health", start=2018),
     fluview.scrape(loc ="public health", start=2019),
-    fluview.scrape(loc ="public health", start=20201)
+    fluview.scrape(loc ="public health", start=2020)
   )
 
 
@@ -58,11 +58,11 @@ fluview.stack <- function(clin.data = df.clin, ph.data = df.ph){
   
   clin.data %>%
     rename(
-     n.fluA = "Total A",
-     n.fluB = "Total B",
-     total.tested = "Total # Tested"
+      n.fluA = "Total A",
+      n.fluB = "Total B",
+      total.tested = "Total # Tested"
     ) -> clin.data
- 
+  
   clin.data <- clin.data[,c("Week", "n.fluA", "n.fluB", "total.tested")]
   ph.data <- ph.data[,c("Week", "n.fluA", "n.fluB", "total.tested")]
   
@@ -76,10 +76,10 @@ fluview.stack <- function(clin.data = df.clin, ph.data = df.ph){
       n.flu = sum(n.fluA, n.fluB),
       total.tested = sum(total.tested)
     ) %>%
-  mutate(
-    percent.fluA = round(n.fluA/n.flu*100,1),
-    percent.fluB = round(n.fluB/n.flu*100,1),
-    percent.positive = round(n.flu/total.tested *100,1) 
+    mutate(
+      percent.fluA = round(n.fluA/n.flu*100,1),
+      percent.fluB = round(n.fluB/n.flu*100,1),
+      percent.positive = round(n.flu/total.tested *100,1) 
     ) %>%
     rename(
       week = "as.factor(Week)"
@@ -92,3 +92,51 @@ fluview.stack <- function(clin.data = df.clin, ph.data = df.ph){
 #### run
 test <- fluview.stack(df.clin, df.ph)
 
+
+
+#### PLOTTER PER EID Article
+library(vroom)
+library(ISOweek)
+library(dplyr)
+library(anomalize)
+
+fluview.mortplot <- function(){
+  ## Step 1, obtain data - will need to update dates manually in the future
+  df <- data.frame(vroom::vroom("https://www.cdc.gov/flu/weekly/weeklyarchives2020-2021/data/NCHSData37.csv"))
+  
+  ## step 2,, fix week
+  df[,"wkyr"]<-paste0(df[,"Year"], "-", ifelse(nchar(df[,"Week"])==1, paste0("0", df[,"Week"]), df[,"Week"]))
+  df[,"wkyr"] <- sub("(\\d{4}-)(\\d{2})", "\\1W\\2-1", df[,"wkyr"])
+  df[,"wkyr"] <- ISOweek::ISOweek2date(df[,"wkyr"])
+  df[,"mort"]<-df[,"Percent.of.Deaths.Due.to.Pneumonia.and.Influenza..P.I."]
+  
+df %>%
+    dplyr::tibble() %>%
+    anomalize::time_decompose(mort, frequency="auto", trend="auto", method="twitter") %>%
+    anomalize::anomalize(remainder, alpha = 0.05, max_anoms = 0.2, method = "gesd") %>%
+    anomalize::time_recompose() %>%
+    anomalize::plot_anomalies(time_recomposed = TRUE) -> p4
+  
+  ### extract and re-plot
+  low.ylim<-(floor(min(df[,"mort"], na.rm=T))-1) - ((floor(min(df[,"mort"], na.rm=T))-1) %% 2) 
+  hi.ylim<-(ceiling(max(df[,"mort"], na.rm=T))+1) + ((ceiling(min(df[,"mort"], na.rm=T))+1) %% 2) 
+  xlab<-df[,"Week"][df[,"Week"]%%10==0]
+  x.ind<-as.numeric(as.character(row.names(df)[df[,"Week"]%in%as.numeric(as.character(xlab))]))
+  min(df[,"mort"])
+  par(mar=c(4,5,1,1))
+  plot(df[,"mort"], type="l", ylim=c(low.ylim,hi.ylim),
+       xaxt="n", yaxt="n", ylab="", xlab="MMWR Week Number")
+  polygon(c(seq(1,nrow(df)), rev(seq(1,nrow(df)))), c(p4$data$recomposed_l2, rev(p4$data$recomposed_l1)), col="grey94", border=NA)
+  lines(df[,"mort"])
+  points(df[,"mort"], cex=ifelse(p4$data$anomaly=="Yes", 1, 0), col=ifelse(p4$data$anomaly=="Yes", "red", "white"), pch=ifelse(p4$data$anomaly=="Yes", 18, 0))
+  axis(1, at=x.ind, labels=xlab)
+  axis(2, at=seq(low.ylim,hi.ylim, by=2), labels=paste0(seq(low.ylim,hi.ylim, by=2),"%"), las=2)
+  mtext(side=2, text="Percent of All Deaths \nDue to Pneumonia and Influenza", line = 3)
+  text(x=2, y=2, "2013", cex=0.8)
+  text(x=43, y=2, "2014", cex=0.8)
+  yearz<-names(table(df[,"Year"]))
+  for(i in 3:length(yearz)){
+    text(x=43+(52*(i-2)), y=low.ylim, yearz[i], cex=0.8)
+  }
+  mtext(side=1, line=4, "Red Points = Anomalies")
+}

@@ -59,8 +59,28 @@ and relevant percentages.
 
 Running the function is simple. Assuming you have a clinical dataset
 from `fluview.scrape` called df.clin, and a public health dataset from
-`fluview.scrap`e called df.ph:
+`fluview.scrape` called df.ph:
 
 ``` r
 df.combined <- fluview.stack(df.clin, df.ph)
+```
+
+3.  `fluview.mortplot` provides a time series-decomposed anomaly
+    detection plot for Pneumonia and Influenza-associated mortality.
+    This function has no options but uses life data from [CDC Flu
+    View](https://www.cdc.gov/flu/weekly/weeklyarchives2020-2021/data/NCHSData37.csv).
+    The function will need updated when new influenza seasons are added
+    as the date is hard coded into the URL. The time series is first
+    decomposed using the
+    [anomalize](https://cran.r-project.org/web/packages/anomalize/index.html)
+    package using `auto` for both frequency and trend options. The
+    decomposition method is `twitter` and the anomalize method is `gesd`
+    with 0.05 `alpha` and 0.2 \`max\_anomalies. Use our [web
+    application](https://surveillance.shinyapps.io/fluview) to alter
+    these options.
+
+To run the function, do the following:
+
+``` r
+fluview.mortplot()
 ```

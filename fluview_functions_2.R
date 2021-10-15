@@ -5,6 +5,45 @@ library(rvest)
 library(tidyverse)
 library(cdcfluview)
 
+fluviewr_data<-function(regionz = "national"){
+  df <- cdcfluview::who_nrevss(region = regionz)
+   
+  df[[1]] %>%
+    rowwise %>%
+    mutate(
+      a_all = sum(a_2009_h1n1, a_h1, a_subtyping_not_performed,
+                  a_h3, a_unable_to_subtype, h3n2v),
+      b_all = sum(b)
+    )%>%
+    select(-c(a_h1, a_h3, a_2009_h1n1, percent_positive, 
+              a_subtyping_not_performed, a_unable_to_subtype,
+              h3n2v, b))-> df_old
+  df[[2]] %>%
+    mutate(
+      a_all = sum(a_2009_h1n1, a_h3, a_subtyping_not_performed, h3n2v),
+      b_all = sum(b, bvic, byam)
+    )  %>%
+    select(-c(a_2009_h1n1, a_h3,
+              a_subtyping_not_performed,
+              h3n2v, b, bvic, byam))-> df_ph
+   df[[3]] %>%
+     rename(
+       a_all = "total_a",
+       b_all = "total_b"
+     ) %>%
+     select(-c(percent_positive,
+               percent_a,
+               percent_b)) -> df_clin
+  
+  
+  df <- rbind(df_old, df_clin, df_ph)
+  df$total_flu <- rowSums(df[,c("a_all", "b_all")])
+  df$percent_a <- round(df$a_all / df$total_specimens *100,1)
+  df$percent_b <- round(df$b_all / df$total_specimens *100,1)
+  return(df)
+}
+
+
 ### Create function to scrape clinical and public health raw data
 ### Loc = "clinical", "public health", "ILI", or "ILI age [character]
 ### start = number for start year of influenza season of interest
@@ -111,7 +150,7 @@ fluview.mortplot <- function(){
   df[,"wkyr"] <- ISOweek::ISOweek2date(df[,"wkyr"])
   df[,"mort"]<-df[,"Percent.of.Deaths.Due.to.Pneumonia.and.Influenza..P.I."]
   
-df %>%
+  df %>%
     dplyr::tibble() %>%
     anomalize::time_decompose(mort, frequency="auto", trend="auto", method="twitter") %>%
     anomalize::anomalize(remainder, alpha = 0.05, max_anoms = 0.2, method = "gesd") %>%

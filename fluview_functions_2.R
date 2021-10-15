@@ -6,19 +6,19 @@ library(tidyverse)
 library(cdcfluview)
 
 fluviewr_data<-function(regionz = "national"){
-  df <- cdcfluview::who_nrevss(region = regionz)
-   
+  df <- cdcfluview::who_nrevss(region = "national")
   df[[1]] %>%
     rowwise %>%
     mutate(
       a_all = sum(a_2009_h1n1, a_h1, a_subtyping_not_performed,
                   a_h3, a_unable_to_subtype, h3n2v),
-      b_all = sum(b)
+      b_all = sum(b) 
     )%>%
     select(-c(a_h1, a_h3, a_2009_h1n1, percent_positive, 
               a_subtyping_not_performed, a_unable_to_subtype,
               h3n2v, b))-> df_old
   df[[2]] %>%
+    rowwise %>%
     mutate(
       a_all = sum(a_2009_h1n1, a_h3, a_subtyping_not_performed, h3n2v),
       b_all = sum(b, bvic, byam)
@@ -35,8 +35,22 @@ fluviewr_data<-function(regionz = "national"){
                percent_a,
                percent_b)) -> df_clin
   
+  df_new <- merge(df_ph, df_clin, by="wk_date", all=T)
+  df_new$total_specimens <- rowSums(df_new[, c("total_specimens.x", "total_specimens.y")])
+  df_new$a_all <- rowSums(df_new[,c("a_all.x", "a_all.y")])
+  df_new$b_all <- rowSums(df_new[,c("b_all.x", "b_all.y")])
   
-  df <- rbind(df_old, df_clin, df_ph)
+  df_new %>%
+    rename(
+      region_type = "region_type.x",
+      year = "year.x",
+      week = "week.x",
+      region = "region.x",
+    ) -> df_new
+  df_new <- df_new[,names(df_old)]
+  
+  df <- rbind(df_old, df_new)
+  
   df$total_flu <- rowSums(df[,c("a_all", "b_all")])
   df$percent_a <- round(df$a_all / df$total_specimens *100,1)
   df$percent_b <- round(df$b_all / df$total_specimens *100,1)

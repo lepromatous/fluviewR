@@ -16,7 +16,19 @@ knitr::opts_chunk$set(
 
 ### Available Functions
 
-1) `fluview.scrape` contains a function to scrape clinical, public health, ILI, or ILI by age group data from HTML tables on the [CDC Flu View Website](https://www.cdc.gov/flu/weekly/index.htm).
+1) `fluviewr_data` utlizes the Fluview Interactive API as implemented by the [cdcfluview](https://cran.r-project.org/web/packages/cdcfluview/index.html) package available on CRAN. The `fluviewr_data` function essentially does the work of `fluview.scrape` and `fluview.stack` outlined below, both of which are being deprecated.
+
+Currently, this function only scrapes nationally aggregate data for all years available (1997 - present) though it will be updated to obtain various geographies in the future. 
+
+To use this function, simply call:
+
+```{r, eval=F}
+df <- fluviewr_data()
+```
+
+The output of this function will contain stacked, cleaned and aggregated clinical and public health data, separated or aggregated by general influenza A vs B as well as the proportion of each for surveillance purposes.
+
+2) `fluview.scrape` function contains a function to scrape clinical, public health, ILI, or ILI by age group data from HTML tables on the [CDC Flu View Website](https://www.cdc.gov/flu/weekly/index.htm).
 
 `fluview.scrape` contains two options:
 
@@ -52,7 +64,7 @@ df.clin <- sapply(seq(2015,2020), function(x) fluview.scrape(loc = "clinical", f
 ```
 
 
-2) `fluview.stack` takes clinical and public health datasets obtained from `fluview.scrape`, and cleans/stacks them for analysis.
+3) `fluview.stack` takes clinical and public health datasets obtained from `fluview.scrape`, and cleans/stacks them for analysis.
 
 This function takes two arguments, `clin.data` and `ph.data` corresponding to the clinical and public health datasets scraped using the `fluview.scrape` function
 
@@ -64,7 +76,7 @@ Running the function is simple. Assuming you have a clinical dataset from `fluvi
 df.combined <- fluview.stack(df.clin, df.ph)
 ```
 
-3) `fluview.mortplot` provides a time series-decomposed anomaly detection plot for Pneumonia and Influenza-associated mortality. This function has no options but uses life data from [CDC Flu View](https://www.cdc.gov/flu/weekly/weeklyarchives2020-2021/data/NCHSData37.csv). The function will need updated when new influenza seasons are added as the date is hard coded into the URL. The time series is first decomposed using the [anomalize](https://cran.r-project.org/web/packages/anomalize/index.html) package using `auto` for both frequency and trend options. The decomposition method is `twitter` and the anomalize method is `gesd` with 0.05 `alpha` and 0.2 `max_anomalies.  Use our [web application](https://surveillance.shinyapps.io/fluview) to alter these options.
+4) `fluview.mortplot` provides a time series-decomposed anomaly detection plot for Pneumonia and Influenza-associated mortality. This function has no options but uses life data from [CDC Flu View](https://www.cdc.gov/flu/weekly/weeklyarchives2020-2021/data/NCHSData37.csv). The function will need updated when new influenza seasons are added as the date is hard coded into the URL. The time series is first decomposed using the [anomalize](https://cran.r-project.org/web/packages/anomalize/index.html) package using `auto` for both frequency and trend options. The decomposition method is `twitter` and the anomalize method is `gesd` with 0.05 `alpha` and 0.2 `max_anomalies.  Use our [web application](https://surveillance.shinyapps.io/fluview) to alter these options.
 
 To run the function, do the following:
 

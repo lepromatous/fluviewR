@@ -14,7 +14,15 @@ df %>%
     y = "pct_flu"
   ) -> df
 
-####################################################################
+
+### split before/after COVID
+df.pre <- subset(df, df$ds<"2020-09-27")
+df.post<- data.frame(cbind(
+                          "ds" = c(rep(NA, times=nrow(df.pre)), df$ds[df$ds>="2020-09-27"]), 
+                          "y" = c(rep(NA, times=nrow(df.pre)), df$y[df$ds>="2020-09-27"])))
+ df.post$ds <- df$ds                    
+
+ ####################################################################
 ####################################################################
 ####################################################################
 ### set up model
@@ -26,11 +34,16 @@ m <- prophet(daily.seasonality= F,
 m <- add_country_holidays(m, country_name = 'US')
 
 ## fit
-m <- fit.prophet(m, df) 
+m <- fit.prophet(m, df.pre) 
 
 # forecast
-future <- make_future_dataframe(m, periods = 3600)
+future <- make_future_dataframe(m, periods = 1000)
 forecast <- predict(m, future)
 plot(m, forecast)
 
+p<-plot(m, forecast)
 
+t <- p +
+  geom_point(data=df.post, aes(x=as.POSIXct(df.post$ds), y=y, colour="actual"))
+
+plotly::ggplotly(t)

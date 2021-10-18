@@ -5,9 +5,31 @@ FluViewR
 
 ### Available Functions
 
-1.  `fluview.scrape` contains a function to scrape clinical, public
-    health, ILI, or ILI by age group data from HTML tables on the [CDC
-    Flu View Website](https://www.cdc.gov/flu/weekly/index.htm).
+1.  `fluviewr_data` utlizes the Fluview Interactive API as implemented
+    by the
+    [cdcfluview](https://cran.r-project.org/web/packages/cdcfluview/index.html)
+    package available on CRAN. The `fluviewr_data` function essentially
+    does the work of `fluview.scrape` and `fluview.stack` outlined
+    below, both of which are being deprecated.
+
+Currently, this function only scrapes nationally aggregate data for all
+years available (1997 - present) though it will be updated to obtain
+various geographies in the future.
+
+To use this function, simply call:
+
+``` r
+df <- fluviewr_data()
+```
+
+The output of this function will contain stacked, cleaned and aggregated
+clinical and public health data, separated or aggregated by general
+influenza A vs B as well as the proportion of each for surveillance
+purposes.
+
+2.  `fluview.scrape` function contains a function to scrape clinical,
+    public health, ILI, or ILI by age group data from HTML tables on the
+    [CDC Flu View Website](https://www.cdc.gov/flu/weekly/index.htm).
 
 `fluview.scrape` contains two options:
 
@@ -47,7 +69,7 @@ Alternatively, you can use an apply function or a for loop:
 df.clin <- sapply(seq(2015,2020), function(x) fluview.scrape(loc = "clinical", function(x) start=x))
 ```
 
-2.  `fluview.stack` takes clinical and public health datasets obtained
+3.  `fluview.stack` takes clinical and public health datasets obtained
     from `fluview.scrape`, and cleans/stacks them for analysis.
 
 This function takes two arguments, `clin.data` and `ph.data`
@@ -65,7 +87,7 @@ from `fluview.scrape` called df.clin, and a public health dataset from
 df.combined <- fluview.stack(df.clin, df.ph)
 ```
 
-3.  `fluview.mortplot` provides a time series-decomposed anomaly
+4.  `fluview.mortplot` provides a time series-decomposed anomaly
     detection plot for Pneumonia and Influenza-associated mortality.
     This function has no options but uses life data from [CDC Flu
     View](https://www.cdc.gov/flu/weekly/weeklyarchives2020-2021/data/NCHSData37.csv).
